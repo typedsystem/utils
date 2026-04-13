@@ -26,7 +26,12 @@ class cmd:
             raise CmdErr(e)
 
     @typed
-    def run(cmd: Union(Str, List, Tuple, File), cwd: Maybe(Path)=None, envs: List(Env)=[], terminate: Bool=True, **kargs: Dict) -> Tuple:
+    def run(
+        cmd: Union(Str, List, Tuple, File), 
+        cwd: Maybe(Path)=None, 
+        envs: Union(List(Env), Dict(Str, keys=Env))={},
+        terminate: Bool=True, 
+        **kargs: Dict) -> Tuple:
         try:
             if not cmd in Union(List, Tuple):
                 if cmd in File:
@@ -37,7 +42,11 @@ class cmd:
                 cmd_list = [str(x) for x in cmd]
 
             env = os.environ.copy()
-            if envs:
+            if envs in List:
+                for env_var in envs:
+                    if env_var in os.environ:
+                        env[env_var] = os.environ[env_var]
+            if envs in Dict:
                 env.update(envs)
 
             if terminate:
