@@ -54,24 +54,7 @@ class mod:
         return hasattr(mod.get(module), obj)
 
     @typed
-    def _is_local(obj: Any) -> Bool:
-        try:
-            return name(obj).startswith('_')
-        except Exception as e:
-            raise ModErr(e)
-
-    @typed
-    def _is_global(obj: Any) -> Bool:
-        try:
-            return not mod._is_local(obj)
-        except Exception as e:
-            raise ModErr(e)
-
-    @typed
     def locals(module: Entry) -> Dict:
-        """
-        Returns the dictionary of locals of a given module entry.
-        """
         try:
             return {name: mod.get(name, module) for name in dir(mod.get(module)) if mod._is_local(name)}
         except Exception as e:
@@ -79,9 +62,6 @@ class mod:
 
     @typed
     def globals(module: Entry) -> Dict:
-        """
-        Returns the dictionary of globals of a given module entry.
-        """
         try:
             return {name: mod.get(name, module) for name in dir(mod.get(module)) if mod._is_global(name)}
         except Exception as e:
@@ -89,9 +69,6 @@ class mod:
 
     @typed
     def imports(module: Entry) -> Union(Dict(Str), Dict(Dict(Str))):
-        """
-        Returns the dictionary of imports of a given module entry.
-        """
         try:
             if not mod.exists(module):
                 raise ModErr(f"The given module '{module}' does not exists.")

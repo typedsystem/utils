@@ -1,29 +1,16 @@
-from typed import typed, Str
-from utils.mods.general import message as _message
+from typed import new
 
-class Exception(BaseException):
-    def __init__(self, message="", **kwargs):
-        if message or kwargs:
-            formatted_message = _message(message=message, **kwargs)
-            super().__init__(formatted_message)
-        else:
-            super().__init__()
+AlreadySet        = new.err('AlreadySet')
+AlreadyExists     = new.err('AlreadyExists')
+AlreadyRegistered = new.err('AlreadyRegistered')
+AlreadyDefined    = new.err('AlreadyDefined')
+AlreadyConnected  = new.err('AlreadyConnected')
 
-@typed
-def newerr(err: Str) -> type:
-    return type(err, (Exception,), {"__name__": err, "__display__": err})
+NotSet        = new.err('NotSet')
+NotExists     = new.err('NotExists')
+NotRegistered = new.err('NotRegistered')
+NotDefined    = new.err('NotDefined')
+NotConnected  = new.err('NotConnected')
 
-AlreadySet = newerr('AlreadySet')
-AlreadyExists = newerr('AlreadyExists')
-AlreadyRegistered = newerr('AlreadyRegistered')
-AlreadyDefined = newerr('AlreadyDefined')
-AlreadyConnected = newerr('AlreadyConnected')
-
-NotSet = newerr('NotSet')
-NotExists = newerr('NotExists')
-NotRegistered = newerr('NotRegistered')
-NotDefined = newerr('NotDefined')
-NotConnected = newerr('NotConnected')
-
-NotMatch = newerr('NotDefined')
-NotFound = newerr('NotConnected')
+NotMatch = new.err('NotDefined')
+NotFound = new.err('NotConnected')

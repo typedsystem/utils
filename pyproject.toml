@@ -1,15 +1,25 @@
 [project]
-name = "utils"
+name = "typedsystem-utils"
 version = "0.4.0"
-description = "General typed utilities to support typedsystem applications."
+description = ""
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "BSD"}
 authors = [
     {name = "Yuri Ximenes", email = "ximenesyuri@gmx.ie"},
 ]
+
 dependencies = [
-    "typedsystem @ git+https://github.com/ximenesyuri/typed"
+]
+
+[project.optional-dependencies]
+git = [
+    "typed @ git+https://github.com/typedsystem/typed",
+    "model @ git+https://github.com/typedsystem/model"
+],
+pypi = [
+    "typedsystem",
+    "typedsystem-model"
 ]
 
 [build-system]
@@ -19,4 +29,3 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["utils*"]
-

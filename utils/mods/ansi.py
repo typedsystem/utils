@@ -1,6 +1,6 @@
-from typed import typed, Str, Bool, Maybe, Union, Nill
+from typed import typed, Str, Bool, Union, Nill
 from utils.mods.color import HEX, RGB
-from utils.mods.helper.ansi import _apply_styles, _parse_color_to_sgr
+from utils.helper.ansi import _apply_styles, _parse_color_to_sgr
 
 class AnsiErr(Exception): pass
 
