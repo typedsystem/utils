@@ -1,4 +1,4 @@
-from typed import Int, Union, Float, Filtered, TYPESYSTEM
+from typed import Int, Union, Float, Filtered, prop
 from typed.err import NotDefined
 from utils.helper.number import (
     _is_natural,
@@ -7,25 +7,18 @@ from utils.helper.number import (
 )
 
 Num  = Union(Int, Float)
-Nat  = Filtered(Num, _is_natural, typesystem=TYPESYSTEM)
-Odd  = Filtered(Num, _is_odd, typesystem=TYPESYSTEM)
-Even = Filtered(Num, _is_even, typesystem=TYPESYSTEM)
-Pos  = Filtered(Num, _is_positive, typesystem=TYPESYSTEM)
-Neg  = Filtered(Num, _is_negative, typesystem=TYPESYSTEM)
+Nat  = Filtered(Num, _is_natural)
+Odd  = Filtered(Num, _is_odd)
+Even = Filtered(Num, _is_even)
+Pos  = Filtered(Num, _is_positive)
+Neg  = Filtered(Num, _is_negative)
 
-Num.__name__  = "Num"
-Nat.__name__  = "Nat"
-Odd.__name__  = "Odd"
-Even.__name__ = "Even"
-Pos.__name__  = "Pos"
-Neg.__name__  = "Neg"
-
-Num.__display__  = Num.__name__
-Nat.__display__  = Num.__name__
-Odd.__display__  = Num.__name__
-Even.__display__ = Num.__name__
-Pos.__display__  = Num.__name__
-Neg.__display__  = Num.__name__
+prop.set.nameof(Num,  "Null")
+prop.set.nameof(Nat,  "Nat")
+prop.set.nameof(Odd,  "Odd")
+prop.set.nameof(Even, "Even")
+prop.set.nameof(Pos,  "Pos")
+prop.set.nameof(Neg,  "Neg")
 
 Num.__null__  = 0.0
 Nat.__null__  = 0

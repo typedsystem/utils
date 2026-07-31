@@ -6,21 +6,6 @@ from typed import Bool, Union, Regex, Filter, Null, Tuple, Int, Str, typed, Nill
 
 Path = Union(Regex(r"^/?(?:(?:[^/:\r\n*?\"<>|\\]+/)*[^/:\r\n*?\"<>|\\]+/?|/?)$"), Null(Str))
 
-def _exists(path: Path) -> Bool:
-    return os.path.exists(path)
-
-def _is_file(path: Path) -> Bool:
-    return os.path.isfile(path)
-
-def _is_dir(path: Path) -> Bool:
-    return os.path.isdir(path)
-
-def _is_symlink(path: Path) -> Bool:
-    return os.path.islink(path)
-
-def _is_mount(path: Path) -> Bool:
-    return os.path.ismount(path)
-
 Exists  = Filter(Path, _exists)
 File    = Filter(Path, _is_file)
 Dir     = Filter(Path, _is_dir)
