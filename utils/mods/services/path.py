@@ -59,7 +59,7 @@ class path:
             raise PathErr(e)
 
     @typed
-    def abs(*paths: Tuple(Path)) -> Union(Path, Tuple(Path)):
+    def absof(*paths: Tuple(Path)) -> Union(Path, Tuple(Path)):
         try:
             if len(paths) == 1:
                 return os.path.abspath(paths[0])

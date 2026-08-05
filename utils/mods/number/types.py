@@ -20,9 +20,6 @@ prop.set.nameof(Even, "Even")
 prop.set.nameof(Pos,  "Pos")
 prop.set.nameof(Neg,  "Neg")
 
-Num.__null__  = 0.0
-Nat.__null__  = 0
-Odd.__null__  = NotDefined
-Even.__null__ = 0
-Pos.__null__  = NotDefined
-Neg.__null__  = NotDefined
+prop.set.nullof(Num, 0.0)
+prop.set.nullof(Nat, 0)
+prop.set.nullof(Even, 0)

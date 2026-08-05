@@ -33,5 +33,5 @@ class NumberChecker(Checker):
         from utils.mods.number.types import Odd
         return entity in Odd
 
-require = NumberChecker(quantifier=None, explode=True)
-check = NumberChecker(quantifier=None, explode=False)
+number_require = NumberChecker(quantifier=None, explode=True)
+number_check = NumberChecker(quantifier=None, explode=False)

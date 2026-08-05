@@ -44,6 +44,11 @@ def Value(val: Any) -> TYPE:
     return value
 
 @typed
+def Null(type: TYPE) -> Any:
+    from typed import prop
+    return Value(prop.nullof(type))
+
+@typed
 def Maybe(*types: Tuple(TYPE)) -> TYPE:
     from typed import Union, Nill, prop
 
