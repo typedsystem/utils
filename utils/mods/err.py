@@ -14,6 +14,3 @@ NotConnected  = new.err('NotConnected')
 
 NotMatch = new.err('NotDefined')
 NotFound = new.err('NotConnected')
-
-NumErr = new.err('NumberErr')
-PathErr = new.err('PathErr')

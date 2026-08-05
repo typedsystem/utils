@@ -1,7 +1,8 @@
-from typed import Filtered, typed, Tuple, Any, Str
+from typed import Filtered, Tuple, Any, Str
+from typed.func import family
 from typed.meta import TYPE
 
-@typed
+@family
 def Regex(regex: Str) -> TYPE:
     import re
     filter = lambda x: re.compile(regex).match(x) is not None
@@ -15,7 +16,7 @@ def Regex(regex: Str) -> TYPE:
 
     return rgx
 
-@typed
+@family
 def Enum(*values: Tuple) -> TYPE:
     from typed import Filtered, Union, prop, Any
 
@@ -35,7 +36,7 @@ def Enum(*values: Tuple) -> TYPE:
 
     return enum
 
-@typed
+@family
 def Value(val: Any) -> TYPE:
     value = Enum(val)
     value.__name__ = f"Value({val})"
@@ -43,12 +44,12 @@ def Value(val: Any) -> TYPE:
 
     return value
 
-@typed
+@family
 def Null(type: TYPE) -> Any:
     from typed import prop
     return Value(prop.nullof(type))
 
-@typed
+@family
 def Maybe(*types: Tuple(TYPE)) -> TYPE:
     from typed import Union, Nill, prop
 

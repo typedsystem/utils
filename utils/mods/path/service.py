@@ -1,7 +1,11 @@
 from typed import service, action, Str
 from typed.meta import TYPE
 from utils.mods.path.types import Path
-from utils.mods.err import PathErr
+from utils.mods.path.err import (
+    PathErr, ExistsErr,
+    FileErr, DirErr,
+    MountErr, SymlinkErr
+)
 
 @service(err=PathErr)
 class path:
@@ -194,17 +198,319 @@ class path:
 
         return action.term(target, ...)
 
-@service(err=PathErr)
+    @action
+    def mkdir(trm, target):
+        import os
+
+        trm_str = str(trm)
+        if not os.path.isdir(trm_str):
+            raise NotADirectoryError(f"Base path is not a directory: {trm_str}")
+
+        target_path = os.path.join(trm_str, str(target))
+        os.makedirs(
+            target_path,
+            exist_ok=True
+        )
+
+        return action.term(
+            None,
+            ...
+        )
+
+    @action
+    def touch(trm, target):
+        import os
+
+        trm_str = str(trm)
+        if not os.path.isdir(trm_str):
+            raise NotADirectoryError(f"Base path is not a directory: {trm_str}")
+
+        target_path = os.path.join(trm_str, str(target))
+        target_parent = os.path.dirname(target_path)
+
+        if target_parent and not os.path.exists(target_parent):
+            os.makedirs(
+                target_parent,
+                exist_ok=True
+            )
+
+        with open(target_path, 'a'):
+            os.utime(
+                target_path,
+                None
+            )
+
+        return action.term(
+            None,
+            ...
+        )
+
+    @action
+    def ls(trm, pattern=None, exclude=None):
+        import os
+        import fnmatch
+
+        trm_str = str(trm)
+
+        def is_match(p, pat_list):
+            if not pat_list:
+                return False
+            base = os.path.basename(p)
+            patterns = [pat_list] if isinstance(pat_list, str) else pat_list
+            for pat in patterns:
+                if base == pat or p == pat or fnmatch.fnmatch(base, pat) or fnmatch.fnmatch(p, pat):
+                    return True
+            return False
+
+        results = []
+
+        if pattern is not None:
+            for root, dirs, files in os.walk(trm_str):
+                for name in dirs + files:
+                    full_path = os.path.join(root, name)
+                    if is_match(full_path, pattern) and not is_match(full_path, exclude):
+                        results.append(full_path)
+        else:
+            if os.path.isdir(trm_str):
+                for name in os.listdir(trm_str):
+                    full_path = os.path.join(trm_str, name)
+                    if not is_match(full_path, exclude):
+                        results.append(full_path)
+
+        return results
+
+    @action
+    def cp(trm, pattern=None, target="", exclude=None):
+        import os
+        import shutil
+        import fnmatch
+
+        trm_str = str(trm)
+        target_str = str(target)
+
+        def is_match(p, pat_list):
+            if not pat_list:
+                return False
+            base = os.path.basename(p)
+            patterns = [pat_list] if isinstance(pat_list, str) else pat_list
+            for pat in patterns:
+                if base == pat or p == pat or fnmatch.fnmatch(base, pat) or fnmatch.fnmatch(p, pat):
+                    return True
+            return False
+
+        if pattern is not None:
+            for root, dirs, files in os.walk(trm_str):
+                for filename in files:
+                    src_path = os.path.join(root, filename)
+                    if not is_match(src_path, pattern):
+                        continue
+                    if is_match(src_path, exclude):
+                        continue
+
+                    rel_path = os.path.relpath(src_path, trm_str)
+                    target_path = os.path.join(target_str, rel_path)
+                    target_parent = os.path.dirname(target_path)
+
+                    if target_parent and not os.path.exists(target_parent):
+                        os.makedirs(target_parent, exist_ok=True)
+
+                    shutil.copy2(src_path, target_path)
+            return action.term(None, ...)
+
+        if is_match(trm_str, exclude):
+            return action.term(None, ...)
+
+        if os.path.isfile(trm_str):
+            if os.path.exists(target_str) and os.path.isdir(target_str):
+                final_target = os.path.join(target_str, os.path.basename(trm_str))
+            else:
+                final_target = target_str
+                target_parent = os.path.dirname(final_target)
+                if target_parent and not os.path.exists(target_parent):
+                    os.makedirs(target_parent, exist_ok=True)
+
+            shutil.copy2(trm_str, final_target)
+            return action.term(None, ...)
+
+        if os.path.isdir(trm_str):
+            if os.path.exists(target_str):
+                if os.path.isdir(target_str):
+                    final_target = os.path.join(target_str, os.path.basename(trm_str))
+                    if not exclude:
+                        shutil.copytree(trm_str, final_target)
+                    else:
+                        for root, dirs, files in os.walk(trm_str):
+                            rel_root = os.path.relpath(root, trm_str)
+                            tgt_root = os.path.join(final_target, rel_root)
+                            if not os.path.exists(tgt_root):
+                                os.makedirs(tgt_root, exist_ok=True)
+                            for f in files:
+                                src_f = os.path.join(root, f)
+                                if not is_match(src_f, exclude):
+                                    shutil.copy2(
+                                        src_f,
+                                        os.path.join(tgt_root, f)
+                                    )
+                else:
+                    raise NotADirectoryError(f"Destination is not a dir: {target_str}")
+            else:
+                if not exclude:
+                    shutil.copytree(trm_str, target_str)
+                else:
+                    for root, dirs, files in os.walk(trm_str):
+                        rel_root = os.path.relpath(root, trm_str)
+                        tgt_root = os.path.join(target_str, rel_root)
+                        if not os.path.exists(tgt_root):
+                            os.makedirs(tgt_root, exist_ok=True)
+                        for f in files:
+                            src_f = os.path.join(root, f)
+                            if not is_match(src_f, exclude):
+                                shutil.copy2(
+                                    src_f,
+                                    os.path.join(tgt_root, f)
+                                )
+            return action.term(trm, ...)
+
+        raise ValueError(f"Unsupported source type: {trm_str}")
+
+    @action
+    def rm(trm, remove=None, exclude=None):
+        import os
+        import shutil
+        import fnmatch
+
+        trm_str = str(trm)
+        if not os.path.exists(trm_str):
+            return action.term(None, ...)
+
+        def is_match(p, pat_list):
+            if not pat_list:
+                return False
+            base = os.path.basename(p)
+            patterns = [pat_list] if isinstance(pat_list, str) else pat_list
+            for pat in patterns:
+                if base == pat or p == pat or fnmatch.fnmatch(base, pat) or fnmatch.fnmatch(p, pat):
+                    return True
+            return False
+
+        if remove is None and not exclude:
+            if os.path.isdir(trm_str):
+                shutil.rmtree(trm_str)
+            else:
+                os.remove(trm_str)
+            return action.term(None, ...)
+
+        if os.path.isdir(trm_str):
+            for root, dirs, files in os.walk(trm_str, topdown=False):
+                for name in files:
+                    file_path = os.path.join(root, name)
+                    if remove and not is_match(file_path, remove):
+                        continue
+                    if is_match(file_path, exclude):
+                        continue
+                    os.remove(file_path)
+
+                for name in dirs:
+                    dir_path = os.path.join(root, name)
+                    if remove and not is_match(dir_path, remove):
+                        continue
+                    if is_match(dir_path, exclude):
+                        continue
+                    try:
+                        os.rmdir(dir_path)
+                    except OSError:
+                        pass
+
+            if not remove and not is_match(trm_str, exclude):
+                try:
+                    os.rmdir(trm_str)
+                except OSError:
+                    pass
+        else:
+            if (not remove or is_match(trm_str, remove)) and not is_match(trm_str, exclude):
+                os.remove(trm_str)
+
+        return action.term(trm, ...)
+
+    @action
+    def chmod(trm, mode):
+        import os
+
+        os.chmod(trm, mode)
+        if os.path.isdir(trm):
+            for root, dirs, files in os.walk(trm):
+                for d in dirs:
+                    dir_path = os.path.join(root, d)
+                    os.chmod(dir_path, mode)
+                for f in files:
+                    file_path = os.path.join(root, f)
+                    os.chmod(file_path, mode)
+
+        return action.term(trm, ...)
+
+    @action
+    def chown(trm, user=None, group=None):
+        import os
+        from pwd import getpwnam
+        from grp import getgrnam
+
+        uid = -1
+        gid = -1
+
+        if user is not None:
+            if isinstance(user, str):
+                try:
+                    uid = getpwnam(user).pw_uid
+                except KeyError:
+                    raise ValueError(f"User '{user}' not found.")
+            elif isinstance(user, int):
+                uid = user
+            else:
+                raise TypeError("User must be a string (username) or an int (UID).")
+
+        if group is not None:
+            if isinstance(group, str):
+                try:
+                    gid = getgrnam(group).gr_gid
+                except KeyError:
+                    raise ValueError(f"Group '{group}' not found.")
+            elif isinstance(group, int):
+                gid = group
+            else:
+                raise TypeError("Group must be a string (group name) or an int (GID).")
+
+        os.chown(trm, uid, gid)
+
+        if os.path.isdir(trm):
+            for root, dirs, files in os.walk(trm):
+                for d in dirs:
+                    dir_path = os.path.join(root, d)
+                    os.chown(
+                        dir_path,
+                        uid,
+                        gid
+                    )
+                for f in files:
+                    file_path = os.path.join(root, f)
+                    os.chown(
+                        file_path,
+                        uid,
+                        gid
+                    )
+
+        return action.term(trm, ...)
+
+@service(err=ExistsErr)
 class exists(path): pass
 
-@service(err=PathErr)
+@service(err=FileErr)
 class dir(path): pass
 
-@service(err=PathErr)
+@service(err=DirErr)
 class file(path): pass
 
-@service(err=PathErr)
+@service(err=MountErr)
 class mount(path): pass
 
-@service(err=PathErr)
+@service(err=SymlinkErr)
 class symlink(path): pass

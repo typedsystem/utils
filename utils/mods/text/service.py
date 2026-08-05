@@ -1,8 +1,6 @@
-import unicodedata
-import re
-from typed import typed, List, Str, Tuple, Union, Dict, Pattern, Int, Bool, Nill
-from utils.mods.number import Nat
+from typed.func import service, action
 
+@service(err=TextErr)
 class text:
     @typed
     def join(iterator: List, separator: Str) -> Str:
