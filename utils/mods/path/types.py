@@ -1,8 +1,6 @@
-from typed import Union, Str, Filtered, prop
+from typed import Union, Str, Filtered, Regex, Null, prop
 from typed.meta import TYPE
 from typed.func import family
-
-from utils.mods.types import Regex, Null
 from utils.helper.path import (
     _exists,
     _is_file,

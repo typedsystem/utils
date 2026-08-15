@@ -59,4 +59,3 @@ class PathChecker(Checker):
 
 path_require = PathChecker(quantifier=None, explode=True)
 path_check = PathChecker(quantifier=None, explode=False)
-

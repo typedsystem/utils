@@ -2,7 +2,7 @@ from typed import lazy
 
 __imports__ = {
     "utils.mods.number.types": [
-        "path", "exists", "file", "dir", "mount", "symlink"
+        "Num", "Nat", "Pos", "Neg", "Even", "Odd"
     ],
     "utils.mods.number.err": [
         "NumberErr"

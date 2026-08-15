@@ -6,21 +6,17 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "BSD"}
 authors = [
-    {name = "Yuri Ximenes", email = "ximenesyuri@gmx.ie"},
-]
-
-dependencies = [
+    {name = "Yuri Ximenes", email = "typed@gmx.ie"},
 ]
 
 [project.optional-dependencies]
-git = [
-    "typed @ git+https://github.com/typedsystem/typed",
-    "model @ git+https://github.com/typedsystem/model"
-],
 pypi = [
-    "typedsystem",
-    "typedsystem-model"
+    "typedsystem"
+],
+git = [
+    "git+https://github.com/typedsystem/typed"
 ]
+
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

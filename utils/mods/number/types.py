@@ -1,5 +1,4 @@
 from typed import Int, Union, Float, Filtered, prop
-from typed.err import NotDefined
 from utils.helper.number import (
     _is_natural,
     _is_positive, _is_negative,
