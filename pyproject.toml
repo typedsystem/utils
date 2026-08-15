@@ -10,12 +10,12 @@ authors = [
 ]
 
 [project.optional-dependencies]
-pypi = [
-    "typedsystem"
-],
-git = [
-    "git+https://github.com/typedsystem/typed"
-]
+pypi = {
+    "typed @ typedsystem"
+},
+git = {
+    "typed @ git+https://github.com/typedsystem/typed"
+}
 
 
 [build-system]
