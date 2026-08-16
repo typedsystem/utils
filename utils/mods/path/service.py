@@ -11,7 +11,7 @@ from utils.mods.path.err import (
 @service(err=PathErr)
 class path:
     @action
-    def __join__(trm, *paths: Tuple(Path)):
+    def __join__(trm, *paths: Tuple(Path)) -> 'path':
         import os
         _paths = [str(path) for path in paths ]
         return action.term(os.path.join(str(trm), *_paths), ...)
@@ -129,211 +129,6 @@ class path:
         return action.term(path_, ...)
 
     @action
-    def read(trm) -> Str:
-        from utils.mods.checker import require
-        require.path.isfile(trm)
-        with open(str(trm), 'r') as f:
-            return action.term(f.read(), Str)
-
-    @action
-    def write(trm: Term, content: Str='', append: Bool=False) -> 'path':
-        from utils.mods.checker import require
-        require.path.isfile(trm)
-        mode = 'a' if append else 'w'
-        with open(str(trm), mode) as f:
-            f.write(content)
-            return action.term(f, ...)
-
-    @action
-    def compress(trm, pattern: Str=None, target: Path="") -> 'path':
-        import os
-        import zipfile
-        import tarfile
-        import fnmatch
-        import mimetypes
-        from utils.mods.checker import require
-
-        trm_str = str(trm)
-        target_str = str(target)
-        require.path.exists(trm_str)
-
-        def is_match(p):
-            if not pattern or pattern == "*":
-                return True
-            rel_p = os.path.relpath(
-                p,
-                trm_str
-            )
-            base = os.path.basename(p)
-            return fnmatch.fnmatch(rel_p, pattern) or fnmatch.fnmatch(base, pattern) or fnmatch.fnmatch(p, pattern)
-
-        mime_type, encoding = mimetypes.guess_type(target_str)
-
-        if mime_type == "application/zip":
-            with zipfile.ZipFile(target_str, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                if os.path.isdir(trm_str):
-                    for root, dirs, files in os.walk(trm_str):
-                        for file_name in files:
-                            filepath = os.path.join(
-                                root,
-                                file_name
-                            )
-                            if is_match(filepath):
-                                arcname = os.path.relpath(
-                                    filepath,
-                                    start=trm_str
-                                )
-                                zipf.write(
-                                    filepath,
-                                    arcname=arcname
-                                )
-                        for dir_name in dirs:
-                            dirpath = os.path.join(
-                                root,
-                                dir_name
-                            )
-                            if is_match(dirpath):
-                                arcname = os.path.relpath(
-                                    dirpath,
-                                    start=trm_str
-                                )
-                                zipf.write(
-                                    dirpath,
-                                    arcname + os.sep
-                                )
-                elif os.path.isfile(trm_str):
-                    if is_match(trm_str):
-                        zipf.write(
-                            trm_str,
-                            arcname=os.path.basename(trm_str)
-                        )
-                else:
-                    raise ValueError(f"Input path not found or not a file/directory: {trm_str}")
-
-        elif mime_type == "application/x-tar" or encoding in ("gzip", "bzip2", "xz", "compress") or mime_type in ("application/gzip", "application/x-bzip2", "application/x-xz"):
-            mode = "w"
-            if encoding == "gzip" or mime_type == "application/gzip":
-                mode = "w:gz"
-            elif encoding == "bzip2" or mime_type == "application/x-bzip2":
-                mode = "w:bz2"
-            elif encoding == "xz" or mime_type == "application/x-xz":
-                mode = "w:xz"
-
-            with tarfile.open(target_str, mode) as tar:
-                if os.path.isdir(trm_str):
-                    for root, dirs, files in os.walk(trm_str):
-                        for file_name in files:
-                            filepath = os.path.join(
-                                root,
-                                file_name
-                            )
-                            if is_match(filepath):
-                                arcname = os.path.relpath(
-                                    filepath,
-                                    trm_str
-                                )
-                                tar.add(
-                                    filepath,
-                                    arcname=arcname
-                                )
-                        for dir_name in dirs:
-                            dirpath = os.path.join(
-                                root,
-                                dir_name
-                            )
-                            if is_match(dirpath):
-                                arcname = os.path.relpath(
-                                    dirpath,
-                                    trm_str
-                                )
-                                tar.add(
-                                    dirpath,
-                                    arcname=arcname
-                                )
-                elif os.path.isfile(trm_str):
-                    if is_match(trm_str):
-                        tar.add(
-                            trm_str,
-                            arcname=os.path.basename(trm_str)
-                        )
-                else:
-                    raise ValueError(f"Input path not found or not a file/directory: {trm_str}")
-        else:
-            raise ValueError(f"Unsupported compression format for output path: {target_str}")
-
-        return action.term(
-            target_str,
-            ...
-        )
-
-
-    @action
-    def decompress(trm, pattern=None, target=""):
-        import os
-        import zipfile
-        import tarfile
-        import fnmatch
-        import mimetypes
-        from utils.mods.checker import path_require
-
-        trm_str = str(trm)
-        path_require.iscompressed(trm_str)
-
-        target_str = str(target)
-        if not os.path.isabs(target_str):
-            target_str = os.path.join(
-                os.path.dirname(os.path.abspath(trm_str)),
-                target_str
-            )
-
-        if not os.path.exists(target_str):
-            os.makedirs(
-                target_str,
-                exist_ok=True
-            )
-
-        def is_match(p):
-            if not pattern or pattern == "*":
-                return True
-            return fnmatch.fnmatch(p, pattern) or fnmatch.fnmatch(os.path.basename(p), pattern)
-
-        mime_type = path_require.mimeof(trm_str)
-        _, encoding = mimetypes.guess_type(trm_str)
-
-        if mime_type == "application/zip":
-            with zipfile.ZipFile(trm_str, 'r') as zipf:
-                if not pattern or pattern == "*":
-                    zipf.extractall(path=target_str)
-                else:
-                    members = [m for m in zipf.namelist() if is_match(m)]
-                    zipf.extractall(
-                        path=target_str,
-                        members=members
-                    )
-        elif mime_type == "application/x-tar" or encoding in ("gzip", "bzip2", "xz", "compress") or mime_type in ("application/gzip", "application/x-bzip2", "application/x-xz"):
-            mode = "r"
-            if encoding == "gzip" or mime_type == "application/gzip":
-                mode = "r:gz"
-            elif encoding == "bzip2" or mime_type == "application/x-bzip2":
-                mode = "r:bz2"
-            elif encoding == "xz" or mime_type == "application/x-xz":
-                mode = "r:xz"
-
-            with tarfile.open(trm_str, mode) as tar:
-                if not pattern or pattern == "*":
-                    tar.extractall(path=target_str)
-                else:
-                    members = [m for m in tar.getmembers() if is_match(m.name)]
-                    tar.extractall(
-                        path=target_str,
-                        members=members
-                    )
-        else:
-            raise ValueError(f"Unsupported extraction format for input path: {trm_str}")
-
-        return action.term(target_str, ...)
-
-    @action
     def mkdir(trm, target):
         import os
 
@@ -429,52 +224,86 @@ class path:
         return results
 
     @action
-    def find(trm: Term, pattern: Str="", kind: Str="", min_depth: Nat=1, max_depth: Nat=1):
+    def find(
+        trm: Term,
+        pattern: Str="",
+        kind: Str="",
+        min_depth: Nat=1,
+        max_depth: Nat=1,
+        reverse: bool=False,
+    ):
         import os
-        categorized_results = {
-            "symlink": [],
-            "mount": [],
-            "dir": [],
-            "file": []
-        }
+        import re
+
+        categorized_results = {"symlink": [], "mount": [], "dir": [], "file": []}
 
         if kind:
             if kind not in categorized_results:
                 raise PathErr(
                     message="Invalid path kind",
                     received=kind,
-                    expected=f"{tuple(categorized_results.keys())}"
+                    expected=f"{tuple(categorized_results.keys())}",
                 )
 
-        import re, os
         compiled_pattern = re.compile(pattern) if pattern else None
         target_directory = os.path.abspath(str(trm))
-        initial_depth = len(target_directory.split(os.sep))
 
-        for root, dirs, files in os.walk(target_directory):
-            current_depth = len(root.split(os.sep)) - initial_depth + 1
+        def categorize_path(full_path: str):
+            item_name = os.path.basename(full_path)
+            if not pattern or compiled_pattern.search(item_name):
+                if os.path.islink(full_path):
+                    categorized_results["symlink"].append(full_path)
+                elif os.path.ismount(full_path):
+                    categorized_results["mount"].append(full_path)
+                elif os.path.isdir(full_path):
+                    categorized_results["dir"].append(full_path)
+                elif os.path.isfile(full_path):
+                    categorized_results["file"].append(full_path)
 
-            if min_depth != 0 and current_depth < min_depth:
-                continue
-            if max_depth != 0 and current_depth > max_depth:
-                continue
+        if reverse:
+            curr_dir = target_directory
+            depth = 1
 
-            for item in dirs + files:
-                if not pattern or compiled_pattern.search(item):
+            while curr_dir:
+                if max_depth != 0 and depth > max_depth:
+                    break
+
+                parent_dir = os.path.dirname(curr_dir)
+
+                if parent_dir == curr_dir:
+                    break
+
+                if min_depth == 0 or depth >= min_depth:
+                    categorize_path(parent_dir)
+
+                    try:
+                        for item in os.listdir(parent_dir):
+                            full_path = os.path.join(parent_dir, item)
+                            if full_path != curr_dir:
+                                categorize_path(full_path)
+                    except PermissionError:
+                        pass
+
+                curr_dir = parent_dir
+                depth += 1
+
+        else:
+            initial_depth = len(target_directory.split(os.sep))
+
+            for root, dirs, files in os.walk(target_directory):
+                current_depth = len(root.split(os.sep)) - initial_depth + 1
+
+                if min_depth != 0 and current_depth < min_depth:
+                    continue
+                if max_depth != 0 and current_depth > max_depth:
+                    continue
+
+                for item in dirs + files:
                     full_path = os.path.join(root, item)
-
-                    if os.path.islink(full_path):
-                        categorized_results["symlink"].append(full_path)
-                    elif os.path.ismount(full_path):
-                        categorized_results["mount"].append(full_path)
-                    elif os.path.isdir(full_path):
-                        categorized_results["dir"].append(full_path)
-                    elif os.path.isfile(full_path):
-                        categorized_results["file"].append(full_path)
-
+                    categorize_path(full_path)
 
         if kind:
-            return [action.term(p, ...) for p in categorized_results[kind]]
+            return [action.term(p, trm.__type__) for p in categorized_results[kind]]
 
         return {
             key: [action.term(p, trm.__type__) for p in paths]
@@ -765,13 +594,222 @@ class path:
         )
 
 @service(err=ExistsErr)
-class exists(path): pass
+class exists(path):
+    @action
+    def compress(trm, pattern: Str=None, target: Path="") -> 'exists':
+        import os
+        import zipfile
+        import tarfile
+        import fnmatch
+        import mimetypes
+        from utils.mods.checker import require
+
+        trm_str = str(trm)
+        target_str = str(target)
+        require.path.exists(trm_str)
+
+        def is_match(p):
+            if not pattern or pattern == "*":
+                return True
+            rel_p = os.path.relpath(
+                p,
+                trm_str
+            )
+            base = os.path.basename(p)
+            return fnmatch.fnmatch(rel_p, pattern) or fnmatch.fnmatch(base, pattern) or fnmatch.fnmatch(p, pattern)
+
+        mime_type, encoding = mimetypes.guess_type(target_str)
+
+        if mime_type == "application/zip":
+            with zipfile.ZipFile(target_str, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                if os.path.isdir(trm_str):
+                    for root, dirs, files in os.walk(trm_str):
+                        for file_name in files:
+                            filepath = os.path.join(
+                                root,
+                                file_name
+                            )
+                            if is_match(filepath):
+                                arcname = os.path.relpath(
+                                    filepath,
+                                    start=trm_str
+                                )
+                                zipf.write(
+                                    filepath,
+                                    arcname=arcname
+                                )
+                        for dir_name in dirs:
+                            dirpath = os.path.join(
+                                root,
+                                dir_name
+                            )
+                            if is_match(dirpath):
+                                arcname = os.path.relpath(
+                                    dirpath,
+                                    start=trm_str
+                                )
+                                zipf.write(
+                                    dirpath,
+                                    arcname + os.sep
+                                )
+                elif os.path.isfile(trm_str):
+                    if is_match(trm_str):
+                        zipf.write(
+                            trm_str,
+                            arcname=os.path.basename(trm_str)
+                        )
+                else:
+                    raise ValueError(f"Input path not found or not a file/directory: {trm_str}")
+
+        elif mime_type == "application/x-tar" or encoding in ("gzip", "bzip2", "xz", "compress") or mime_type in ("application/gzip", "application/x-bzip2", "application/x-xz"):
+            mode = "w"
+            if encoding == "gzip" or mime_type == "application/gzip":
+                mode = "w:gz"
+            elif encoding == "bzip2" or mime_type == "application/x-bzip2":
+                mode = "w:bz2"
+            elif encoding == "xz" or mime_type == "application/x-xz":
+                mode = "w:xz"
+
+            with tarfile.open(target_str, mode) as tar:
+                if os.path.isdir(trm_str):
+                    for root, dirs, files in os.walk(trm_str):
+                        for file_name in files:
+                            filepath = os.path.join(
+                                root,
+                                file_name
+                            )
+                            if is_match(filepath):
+                                arcname = os.path.relpath(
+                                    filepath,
+                                    trm_str
+                                )
+                                tar.add(
+                                    filepath,
+                                    arcname=arcname
+                                )
+                        for dir_name in dirs:
+                            dirpath = os.path.join(
+                                root,
+                                dir_name
+                            )
+                            if is_match(dirpath):
+                                arcname = os.path.relpath(
+                                    dirpath,
+                                    trm_str
+                                )
+                                tar.add(
+                                    dirpath,
+                                    arcname=arcname
+                                )
+                elif os.path.isfile(trm_str):
+                    if is_match(trm_str):
+                        tar.add(
+                            trm_str,
+                            arcname=os.path.basename(trm_str)
+                        )
+                else:
+                    raise ValueError(f"Input path not found or not a file/directory: {trm_str}")
+        else:
+            raise ValueError(f"Unsupported compression format for output path: {target_str}")
+
+        return action.term(
+            target_str,
+            ...
+        )
+
+    @action
+    def decompress(trm, pattern=None, target="") -> 'exists':
+        import os
+        import zipfile
+        import tarfile
+        import fnmatch
+        import mimetypes
+        from utils.mods.checker import path_require
+
+        trm_str = str(trm)
+        path_require.iscompressed(trm_str)
+
+        target_str = str(target)
+        if not os.path.isabs(target_str):
+            target_str = os.path.join(
+                os.path.dirname(os.path.abspath(trm_str)),
+                target_str
+            )
+
+        if not os.path.exists(target_str):
+            os.makedirs(
+                target_str,
+                exist_ok=True
+            )
+
+        def is_match(p):
+            if not pattern or pattern == "*":
+                return True
+            return fnmatch.fnmatch(p, pattern) or fnmatch.fnmatch(os.path.basename(p), pattern)
+
+        mime_type = path_require.mimeof(trm_str)
+        _, encoding = mimetypes.guess_type(trm_str)
+
+        if mime_type == "application/zip":
+            with zipfile.ZipFile(trm_str, 'r') as zipf:
+                if not pattern or pattern == "*":
+                    zipf.extractall(path=target_str)
+                else:
+                    members = [m for m in zipf.namelist() if is_match(m)]
+                    zipf.extractall(
+                        path=target_str,
+                        members=members
+                    )
+        elif mime_type == "application/x-tar" or encoding in ("gzip", "bzip2", "xz", "compress") or mime_type in ("application/gzip", "application/x-bzip2", "application/x-xz"):
+            mode = "r"
+            if encoding == "gzip" or mime_type == "application/gzip":
+                mode = "r:gz"
+            elif encoding == "bzip2" or mime_type == "application/x-bzip2":
+                mode = "r:bz2"
+            elif encoding == "xz" or mime_type == "application/x-xz":
+                mode = "r:xz"
+
+            with tarfile.open(trm_str, mode) as tar:
+                if not pattern or pattern == "*":
+                    tar.extractall(path=target_str)
+                else:
+                    members = [m for m in tar.getmembers() if is_match(m.name)]
+                    tar.extractall(
+                        path=target_str,
+                        members=members
+                    )
+        else:
+            raise ValueError(f"Unsupported extraction format for input path: {trm_str}")
+
+        return action.term(target_str, ...)
 
 @service(err=FileErr)
-class dir(path): pass
+class dir(exists): pass
 
 @service(err=DirErr)
-class file(path): pass
+class file(exists):
+    @action
+    def read(trm) -> Str:
+        from utils.mods.checker import require
+        require.path.isfile(trm)
+        with open(str(trm), 'r') as f:
+            return action.term(f.read(), Str)
+
+    @action
+    def linesof(trm) -> List(Str):
+        from utils.mods.checker import require
+        require.path.isfile(trm)
+        with open(str(trm), 'r') as f:
+            return action.term(f.readlines(), List(Str))
+
+    @action
+    def write(trm: Term, content: Str='', append: Bool=False) -> 'file':
+        from utils.mods.checker import require
+        require.path.isfile(trm)
+        mode = 'a' if append else 'w'
+        with open(str(trm), mode) as f:
+            f.write(content)
+            return action.term(f, ...)
 
 @service(err=MountErr)
 class mount(path): pass

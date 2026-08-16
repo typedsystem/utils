@@ -1,4 +1,4 @@
-from utils.mods.path.enriched import Path
+from utils.mods.path.enriched import Path, File
 
 class path_prop:
     absof  = Path.absof
@@ -7,3 +7,6 @@ class path_prop:
     extof  = Path.extof
     mimeof = Path.mimeof
     encof  = Path.encof
+
+class file_prop:
+    linesof = File.linesof
