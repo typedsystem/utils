@@ -9,9 +9,9 @@ from utils.mods.path.err import (
 )
 
 @service(err=PathErr)
-class path:
+class PathService:
     @action
-    def __join__(trm, *paths: Tuple(Path)) -> 'path':
+    def __join__(trm, *paths: Tuple(Path)) -> 'PathService':
         import os
         _paths = [str(path) for path in paths ]
         return action.term(os.path.join(str(trm), *_paths), ...)
@@ -21,7 +21,7 @@ class path:
         return str(trm).split('/')
 
     @action
-    def cwd(trm) -> 'path':
+    def cwd(trm) -> 'PathService':
         """
         : kind is action
         : args
@@ -33,7 +33,7 @@ class path:
         return action.term(os.path.abspath(os.path.curdir), ...)
 
     @action
-    def here(trm) -> 'path':
+    def here(trm) -> 'PathService':
         """
         Returns the current file directory
 
@@ -47,7 +47,7 @@ class path:
         return action.term(os.path.dirname(os.path.abspath(caller_filepath)), ...)
 
     @action
-    def absof(trm) -> 'path':
+    def absof(trm) -> 'PathService':
         """
         :: args:
         ::  - trm: Path
@@ -113,7 +113,7 @@ class path:
         return action.term(os.path.basename(str(trm)).split('.')[-1], Str)
 
     @action
-    def parent(trm, level: Nat=1) -> 'path':
+    def parent(trm, level: Nat=1) -> 'PathService':
         import os
         for _ in range(max(0, level)):
             path_ = str(trm)
@@ -311,7 +311,7 @@ class path:
         }
 
     @action
-    def cp(trm, pattern=None, target="", exclude=None):
+    def cp(trm, pattern=None, target="", exclude=None) -> 'PathService':
         import os
         import shutil
         import fnmatch
@@ -405,7 +405,7 @@ class path:
         raise ValueError(f"Unsupported source type: {trm_str}")
 
     @action
-    def rm(trm, remove=None, exclude=None):
+    def rm(trm, remove=None, exclude=None) -> 'PathService':
         import os
         import shutil
         import fnmatch
@@ -429,7 +429,7 @@ class path:
                 shutil.rmtree(trm_str)
             else:
                 os.remove(trm_str)
-            return action.term(None, ...)
+            return action.term(trm_str, ...)
 
         if os.path.isdir(trm_str):
             for root, dirs, files in os.walk(trm_str, topdown=False):
@@ -464,7 +464,7 @@ class path:
         return action.term(trm, ...)
 
     @action
-    def chmod(trm, mode):
+    def chmod(trm, mode) -> 'PathService':
         import os
 
         os.chmod(trm, mode)
@@ -480,7 +480,7 @@ class path:
         return action.term(trm, ...)
 
     @action
-    def chown(trm, user=None, group=None):
+    def chown(trm, user=None, group=None) -> 'PathService':
         import os
         from pwd import getpwnam
         from grp import getgrnam
@@ -532,7 +532,7 @@ class path:
         return action.term(trm, ...)
 
     @action
-    def sync(trm, target='', delete=False):
+    def sync(trm, target='', delete=False) -> 'PathService':
         import os
         import filecmp
         import shutil
@@ -588,15 +588,12 @@ class path:
                             if not os.path.exists(src_file):
                                 os.remove(dst_file)
 
-        return action.term(
-            None,
-            ...
-        )
+        return action.term(trm, ...)
 
 @service(err=ExistsErr)
-class exists(path):
+class ExistsService(PathService):
     @action
-    def compress(trm, pattern: Str=None, target: Path="") -> 'exists':
+    def compress(trm, pattern: Str=None, target: Path="") -> 'ExistsService':
         import os
         import zipfile
         import tarfile
@@ -712,13 +709,10 @@ class exists(path):
         else:
             raise ValueError(f"Unsupported compression format for output path: {target_str}")
 
-        return action.term(
-            target_str,
-            ...
-        )
+        return action.term(target_str, ...)
 
     @action
-    def decompress(trm, pattern=None, target="") -> 'exists':
+    def decompress(trm, pattern=None, target="") -> 'ExistsService':
         import os
         import zipfile
         import tarfile
@@ -784,10 +778,10 @@ class exists(path):
         return action.term(target_str, ...)
 
 @service(err=FileErr)
-class dir(exists): pass
+class DirService(ExistsService): pass
 
 @service(err=DirErr)
-class file(exists):
+class FileService(ExistsService):
     @action
     def read(trm) -> Str:
         from utils.mods.checker import require
@@ -803,7 +797,7 @@ class file(exists):
             return action.term(f.readlines(), List(Str))
 
     @action
-    def write(trm: Term, content: Str='', append: Bool=False) -> 'file':
+    def write(trm: Term, content: Str='', append: Bool=False) -> 'FileService':
         from utils.mods.checker import require
         require.path.isfile(trm)
         mode = 'a' if append else 'w'
@@ -812,10 +806,10 @@ class file(exists):
             return action.term(f, ...)
 
 @service(err=MountErr)
-class mount(path): pass
+class MountService(PathService): pass
 
 @service(err=SymlinkErr)
-class symlink(path): pass
+class SymlinkService(PathService): pass
 
 @service(err=CompressedErr)
-class compressed(path): pass
+class CompressedService(PathService): pass
