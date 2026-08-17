@@ -1,6 +1,6 @@
 from typed import Union, Str, Filtered, Regex, Null, prop
 from typed.meta import TYPE
-from typed.func import family
+from typed.wrap import family
 from utils.helper.path import (
     _exists,
     _is_file,

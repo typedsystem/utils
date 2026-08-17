@@ -1,4 +1,4 @@
-from typed.func import func
+from typed.wrap import func
 
 def _exists(path: str) -> bool:
     import os

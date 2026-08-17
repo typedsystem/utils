@@ -1,4 +1,4 @@
-from typed.mods.types.service import Enriched
+from typed import Enriched
 from utils.mods.path.service import (
     PathService,
     ExistsService,
